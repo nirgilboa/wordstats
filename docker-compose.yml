@@ -1,0 +1,63 @@
+version: "3.4"
+
+services:
+  redis-celery:
+    image: "redis:latest"
+    restart: "${DOCKER_RESTART_POLICY:-unless-stopped}"
+    stop_grace_period: "${DOCKER_STOP_GRACE_PERIOD:-3s}"
+    volumes:
+      - "redis-celery:/data"
+    ports:
+      - "6379:6379"
+
+  redis-results:
+    image: "redis:latest"
+    restart: "${DOCKER_RESTART_POLICY:-unless-stopped}"
+    stop_grace_period: "${DOCKER_STOP_GRACE_PERIOD:-3s}"
+    volumes:
+      - "redis-results:/data"
+    ports:
+      - "6380:6379"
+
+  flask:
+    build:
+      context: "."
+      args:
+        - "FLASK_ENV=${FLASK_ENV:-production}"
+    environment:
+      - REDIS_HOST=redis-results
+      - REDIS_PORT=6379
+      - CELERY_BROKER_URL=redis://redis-celery:6379
+      - CELERY_RESULT_BACKEND=redis://redis-celery:6379
+    command: gunicorn "wordstats:app" --name=wordstats --bind=0.0.0.0:8000 --workers="${GUNICORN_WORKERS:-1}" --log-level="${GUNICORN_LOG_LEVEL:-info}" --log-file='-' --error-logfile='-' --access-logfile='-'
+    depends_on:
+      - "redis-celery"
+      - "redis-results"
+    ports:
+      - "8000:8000"
+    restart: "${DOCKER_RESTART_POLICY:-unless-stopped}"
+    stop_grace_period: "${DOCKER_STOP_GRACE_PERIOD:-3s}"
+    volumes:
+      - "${DOCKER_FLASK_VOLUME:-./:/app}"
+
+  worker:
+    build:
+      context: "."
+      args:
+        - "FLASK_ENV=${FLASK_ENV:-production}"
+    environment:
+      - REDIS_HOST=redis-results
+      - REDIS_PORT=6379
+      - CELERY_BROKER_URL=redis://redis-celery:6379
+      - CELERY_RESULT_BACKEND=redis://redis-celery:6379
+    command: celery -A wordstats.celery worker --loglevel=info
+    depends_on:
+      - "redis-celery"
+    restart: "${DOCKER_RESTART_POLICY:-unless-stopped}"
+    stop_grace_period: "${DOCKER_STOP_GRACE_PERIOD:-3s}"
+    volumes:
+      - "${DOCKER_FLASK_VOLUME:-./:/app}"
+
+volumes:
+  redis-celery: {}
+  redis-results: {}
