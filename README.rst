@@ -66,7 +66,7 @@ Files::
 
 Assumptions:
     - The OS is \*nix (Windows is not supported)
-    - Path provided is local and absolute (\app is mapped to local folder)
+    - Path provided is local and absolute (/app is mapped to local folder)
     - File encoding is utf-8
 
 Urls::
