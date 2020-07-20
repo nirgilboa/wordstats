@@ -75,8 +75,8 @@ Urls::
     Content-Type: application/json
     Example Payload:
     {
-        "type": "file",
-        "data": "/home/Downloads/very_large_file.txt"
+        "type": "url",
+        "data": "https://raw.githubusercontent.com/nirgilboa/wordstats/master/text_file.txt"
     }
 
 
